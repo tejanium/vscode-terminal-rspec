@@ -7,7 +7,7 @@
 	},
 	"publisher": "tejanium",
 	"description": "Run rspec for the current file or line in iTerm2 or cmux",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"engines": {
 		"vscode": "^1.55.0"
 	},
@@ -21,44 +21,59 @@
 	],
 	"main": "./extension.js",
 	"contributes": {
-		"configuration": {
-			"title": "terminal-rspec",
-			"properties": {
-				"terminal-rspec.terminal": {
-					"type": "string",
-					"enum": [
-						"iterm",
-						"cmux"
-					],
-					"enumDescriptions": [
-						"iTerm2, current session of the first window",
-						"cmux, the surface in terminal-rspec.cmuxSurface"
-					],
-					"default": "iterm",
-					"description": "Terminal that runs rspec."
-				},
-				"terminal-rspec.rspecCommand": {
-					"type": "string",
-					"default": "bundle exec rspec",
-					"description": "Rspec command to use, default: `bundle exec rspec`"
-				},
-				"terminal-rspec.runInForeground": {
-					"type": "boolean",
-					"default": false,
-					"description": "iTerm only: activate the iTerm session on execution."
-				},
-				"terminal-rspec.cmuxSurface": {
-					"type": "string",
-					"default": "",
-					"description": "cmux only: surface that runs rspec, as a ref (`surface:3`) or UUID. Find it with `cmux tree`."
-				},
-				"terminal-rspec.cmuxPath": {
-					"type": "string",
-					"default": "/Applications/cmux.app/Contents/Resources/bin/cmux",
-					"description": "cmux only: path to the cmux CLI."
+		"configuration": [
+			{
+				"title": "General",
+				"order": 1,
+				"properties": {
+					"terminal-rspec.terminal": {
+						"type": "string",
+						"enum": [
+							"iterm",
+							"cmux"
+						],
+						"enumDescriptions": [
+							"iTerm2, current session of the first window",
+							"cmux, the surface in terminal-rspec.cmuxSurface"
+						],
+						"default": "iterm",
+						"description": "Terminal that runs rspec."
+					},
+					"terminal-rspec.rspecCommand": {
+						"type": "string",
+						"default": "bundle exec rspec",
+						"description": "Rspec command to use, default: `bundle exec rspec`"
+					}
+				}
+			},
+			{
+				"title": "iTerm",
+				"order": 2,
+				"properties": {
+					"terminal-rspec.runInForeground": {
+						"type": "boolean",
+						"default": false,
+						"description": "Activate the iTerm session on execution."
+					}
+				}
+			},
+			{
+				"title": "cmux",
+				"order": 3,
+				"properties": {
+					"terminal-rspec.cmuxSurface": {
+						"type": "string",
+						"default": "",
+						"markdownDescription": "Surface that runs rspec, as a ref (`surface:3`) or UUID. Run `cmux identify` in that pane and copy `caller.surface_ref`."
+					},
+					"terminal-rspec.cmuxPath": {
+						"type": "string",
+						"default": "/Applications/cmux.app/Contents/Resources/bin/cmux",
+						"description": "Path to the cmux CLI."
+					}
 				}
 			}
-		},
+		],
 		"commands": [
 			{
 				"command": "terminal-rspec.runAll",
