@@ -1,13 +1,13 @@
 {
-	"name": "rspec-iterm",
-	"displayName": "rspec-iterm",
+	"name": "terminal-rspec",
+	"displayName": "terminal-rspec",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/xijo/vscode-rspec-iterm"
+		"url": "https://github.com/tejanium/vscode-terminal-rspec"
 	},
-	"publisher": "xijo",
-	"description": "Execute rspec in iterm for a given file",
-	"version": "0.1.4",
+	"publisher": "tejanium",
+	"description": "Run rspec for the current file or line in iTerm2 or cmux",
+	"version": "0.2.0",
 	"engines": {
 		"vscode": "^1.55.0"
 	},
@@ -15,39 +15,62 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:extension.runAll",
-		"onCommand:extension.runAgain",
-		"onCommand:extension.runCurrent"
+		"onCommand:terminal-rspec.runAll",
+		"onCommand:terminal-rspec.runAgain",
+		"onCommand:terminal-rspec.runCurrent"
 	],
 	"main": "./extension.js",
 	"contributes": {
 		"configuration": {
-			"title": "rspec-iterm",
+			"title": "terminal-rspec",
 			"properties": {
-				"rspec-iterm.runInForeground": {
-					"type": "boolean",
-					"default": false,
-					"description": "Run rspec command in foreground (switch to iterm on activation)."
+				"terminal-rspec.terminal": {
+					"type": "string",
+					"enum": [
+						"iterm",
+						"cmux"
+					],
+					"enumDescriptions": [
+						"iTerm2, current session of the first window",
+						"cmux, the surface in terminal-rspec.cmuxSurface"
+					],
+					"default": "iterm",
+					"description": "Terminal that runs rspec."
 				},
-				"rspec-iterm.rspecCommand": {
+				"terminal-rspec.rspecCommand": {
 					"type": "string",
 					"default": "bundle exec rspec",
 					"description": "Rspec command to use, default: `bundle exec rspec`"
+				},
+				"terminal-rspec.runInForeground": {
+					"type": "boolean",
+					"default": false,
+					"description": "iTerm only: activate the iTerm session on execution."
+				},
+				"terminal-rspec.cmuxSurface": {
+					"type": "string",
+					"default": "",
+					"description": "cmux only: surface that runs rspec, as a ref (`surface:3`) or UUID. Find it with `cmux tree`."
+				},
+				"terminal-rspec.cmuxPath": {
+					"type": "string",
+					"default": "/Applications/cmux.app/Contents/Resources/bin/cmux",
+					"description": "cmux only: path to the cmux CLI."
 				}
 			}
 		},
 		"commands": [
 			{
-				"command": "extension.runAll",
-				"title": "rspec-iterm: Run all"
+				"command": "terminal-rspec.runAll",
+				"title": "terminal-rspec: Run all"
 			},
 			{
-				"command": "extension.runAgain",
-				"title": "rspec-iterm: Run again"
+				"command": "terminal-rspec.runAgain",
+				"title": "terminal-rspec: Run again"
 			},
 			{
-				"command": "extension.runCurrent",
-				"title": "rspec-iterm: Run current line"
+				"command": "terminal-rspec.runCurrent",
+				"title": "terminal-rspec: Run current line"
 			}
 		]
 	},

@@ -1,35 +1,37 @@
 const vscode = require('vscode')
-const {exec} = require('child_process')
+const {execFile} = require('child_process')
 
-let lastCommand
+const TERMINALS = {
+	iterm: sendToIterm,
+	cmux: sendToCmux,
+}
+
+let lastCode
 
 function activate(context) {
-	let runAllCommand = vscode.commands.registerCommand('extension.runAll', runAll)
-	context.subscriptions.push(runAllCommand)
-
-	let runAgainCommand = vscode.commands.registerCommand('extension.runAgain', runAgain)
-	context.subscriptions.push(runAgainCommand)
-
-	let runCurrentCommand = vscode.commands.registerCommand('extension.runCurrent', runCurrent)
-	context.subscriptions.push(runCurrentCommand)
+	context.subscriptions.push(
+		vscode.commands.registerCommand('terminal-rspec.runAll', runAll),
+		vscode.commands.registerCommand('terminal-rspec.runAgain', runAgain),
+		vscode.commands.registerCommand('terminal-rspec.runCurrent', runCurrent)
+	)
 }
 exports.activate = activate
 
 function runAll() {
-	executeCommand(buildCommand(`${rspecCommand()} ${getFilePath()}`))
+	run(`${rspecCommand()} ${getFilePath()}`)
 }
 
 function runAgain() {
-	if (lastCommand) {
-		executeCommand(lastCommand)
-	} else {
-		vscode.window.showInformationMessage('rspec-iterm: No previous command found')
+	if (!lastCode) {
+		vscode.window.showInformationMessage('terminal-rspec: No previous command found')
+		return
 	}
+	send(lastCode)
 }
 
 function runCurrent() {
 	let line = vscode.window.activeTextEditor.selection.active.line + 1
-	executeCommand(buildCommand(`${rspecCommand()} ${getFilePath()}:${line}`))
+	run(`${rspecCommand()} ${getFilePath()}:${line}`)
 }
 
 // Try to return relative file path, fallback to full qualified.
@@ -47,27 +49,54 @@ function getFilePath() {
 	}
 }
 
-function buildCommand(code) {
-	let activate = ''
-	if (vscode.workspace.getConfiguration('rspec-iterm').get('runInForeground')) {
-		activate = ` -e 'activate current session' `
-	}
-	const command = `osascript \
-		-e 'tell application "iTerm2"' \
-		-e 'tell current session of first window' \
-		${activate} \
-		-e 'write text "${code}"' \
-		-e 'end tell' \
-		-e 'end tell' \
-	`
-	lastCommand = command
-	return command
+function run(code) {
+	lastCode = code
+	send(code)
 }
 
-function executeCommand(command) {
-	exec(command)
+function send(code) {
+	const terminal = config().get('terminal')
+	const sendTo = TERMINALS[terminal]
+	if (!sendTo) {
+		vscode.window.showErrorMessage(`terminal-rspec: Unknown terminal "${terminal}"`)
+		return
+	}
+	sendTo(code)
+}
+
+function sendToIterm(code) {
+	const script = ['tell application id "com.googlecode.iterm2"', 'tell current session of first window']
+	if (config().get('runInForeground')) {
+		script.push('activate current session')
+	}
+	script.push(`write text "${escapeAppleScript(code)}"`, 'end tell', 'end tell')
+	execFile('osascript', script.flatMap(line => ['-e', line]), reportError)
+}
+
+// Without --surface cmux types into whichever pane has focus, which could be an agent session.
+function sendToCmux(code) {
+	const surface = config().get('cmuxSurface')
+	if (!surface) {
+		vscode.window.showErrorMessage('terminal-rspec: Set terminal-rspec.cmuxSurface to the cmux surface that should run rspec (find it with `cmux tree`)')
+		return
+	}
+	execFile(config().get('cmuxPath'), ['send', '--surface', surface, `${code}\n`], reportError)
+}
+
+function escapeAppleScript(text) {
+	return text.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+}
+
+function reportError(error, _stdout, stderr) {
+	if (error) {
+		vscode.window.showErrorMessage(`terminal-rspec: ${stderr.trim() || error.message}`)
+	}
 }
 
 function rspecCommand() {
-	return vscode.workspace.getConfiguration('rspec-iterm').get('rspecCommand');
+	return config().get('rspecCommand')
+}
+
+function config() {
+	return vscode.workspace.getConfiguration('terminal-rspec')
 }
